@@ -1,21 +1,13 @@
 {
   "name": "webservices",
   "version": "1.0.0",
-  "description": "Rendu TP et exercices pour Valentin Montagne",
+  "description": "Léa DE QUEIROS",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Ayoub FATHALLAH",
+  "author": "",
   "license": "ISC",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Formidabledu59/WebServices.git"
-  },
-  "bugs": {
-    "url": "https://github.com/Formidabledu59/WebServices/issues"
-  },
-  "homepage": "https://github.com/Formidabledu59/WebServices#readme",
   "dependencies": {
     "postgres": "^3.4.5",
     "soap": "^1.1.8"

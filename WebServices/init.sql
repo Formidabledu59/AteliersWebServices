@@ -7,3 +7,4 @@ CREATE TABLE products (
 
 INSERT INTO products (name, about, price) VALUES
   ('My first game', 'This is an awesome game', '60')
+

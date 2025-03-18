@@ -1,14 +1,16 @@
 {
-  "name": "rest-postgres",
+  "name": "rest",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "express": "^4.21.2",
     "postgres": "^3.4.5",
     "zod": "^3.24.2"
