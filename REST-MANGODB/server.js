@@ -1,5 +1,5 @@
 import express from "express";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import { z } from "zod";
 
 const app = express();
@@ -69,32 +69,31 @@ app.get("/find-documents-filtered", async (req, res) => {
   }
 });
 
-// Route to create a product
+// Route to create a product with category IDs
 app.post("/products", async (req, res) => {
-  const result = CreateProductSchema.safeParse(req.body);
+  const result = CreateProductSchema.extend({
+    categoryIds: z.array(z.string().refine((id) => ObjectId.isValid(id), {
+      message: "Invalid ObjectId format",
+    })),
+  }).safeParse(req.body);
 
   // If Zod parsed successfully the request body
   if (result.success) {
-    const { name, about, price } = result.data;
+    const { name, about, price, categoryIds } = result.data;
+    const categoryObjectIds = categoryIds.map((id) => new ObjectId(id));
 
     try {
       const ack = await db
         .collection("products")
-        .insertOne({ name, about, price });
+        .insertOne({ name, about, price, categoryIds: categoryObjectIds });
 
-      // Validate the inserted product with ProductSchema
-      const validatedProduct = ProductSchema.safeParse({
-        _id: ack.insertedId.toString(),
+      res.status(201).send({
+        _id: ack.insertedId,
         name,
         about,
         price,
+        categoryIds: categoryObjectIds,
       });
-
-      if (validatedProduct.success) {
-        res.status(201).send(validatedProduct.data);
-      } else {
-        res.status(500).send({ error: "Failed to validate inserted product" });
-      }
     } catch (err) {
       console.error("Error inserting product:", err);
       res.status(500).send({ error: "Failed to create product" });
@@ -104,23 +103,71 @@ app.post("/products", async (req, res) => {
   }
 });
 
-// Update a document
-// The following operation updates a document in the documents collection.
+// Route to get products with categories (aggregation)
+app.get("/products", async (req, res) => {
+  try {
+    const result = await db
+      .collection("products")
+      .aggregate([
+        { $match: {} }, // Match all products (can be customized for filtering)
+        {
+          $lookup: {
+            from: "categories", // Collection to join
+            localField: "categoryIds", // Field in "products"
+            foreignField: "_id", // Field in "categories"
+            as: "categories", // Output array field
+          },
+        },
+      ])
+      .toArray();
 
-const updateResult = await collection.updateOne({ a: 3 }, { $set: { b: 1 } });
-console.log('Updated documents =>', updateResult);
-// The method updates the first document where the field a is equal to 3 by adding a new field b to the document set to 1. updateResult contains information about whether there was a matching document to update or not.
+    res.status(200).send(result);
+  } catch (err) {
+    console.error("Error fetching products with categories:", err);
+    res.status(500).send({ error: "Failed to fetch products" });
+  }
+});
 
-// Remove a document
-// Remove the document where the field a is equal to 3.
+// Route to update a document
+app.put("/update-document", async (req, res) => {
+  try {
+    const collection = db.collection("documents");
+    const updateResult = await collection.updateOne({ a: 3 }, { $set: { b: 1 } });
+    console.log("Updated documents =>", updateResult);
+    res.status(200).json({ message: "Document updated", result: updateResult });
+  } catch (err) {
+    console.error("Error updating document:", err);
+    res.status(500).json({ error: "Failed to update document" });
+  }
+});
 
-const deleteResult = await collection.deleteMany({ a: 3 });
-console.log('Deleted documents =>', deleteResult);
+// Route to delete documents
+app.delete("/delete-documents", async (req, res) => {
+  try {
+    const collection = db.collection("documents");
+    const deleteResult = await collection.deleteMany({ a: 3 });
+    console.log("Deleted documents =>", deleteResult);
+    res.status(200).json({ message: "Documents deleted", result: deleteResult });
+  } catch (err) {
+    console.error("Error deleting documents:", err);
+    res.status(500).json({ error: "Failed to delete documents" });
+  }
+});
+
+// Route to create an index on the "a" field in the "documents" collection
+app.post("/create-index", async (req, res) => {
+  try {
+    const collection = db.collection("documents");
+    const indexName = await collection.createIndex({ a: 1 });
+    console.log("Index created =>", indexName);
+    res.status(200).json({ message: "Index created", indexName });
+  } catch (err) {
+    console.error("Error creating index:", err);
+    res.status(500).json({ error: "Failed to create index" });
+  }
+});
 
 // Index a Collection
 // Indexes can improve your application's performance. The following function creates an index on the a field in the documents collection.
-
-const indexName = await collection.createIndex({ a: 1 });
-console.log('index name =', indexName);
 
 // Full documentation : https://www.mongodb.com/docs/drivers/node/current/
